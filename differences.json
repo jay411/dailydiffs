@@ -1,0 +1,162 @@
+{
+  "round_1": [
+    {
+      "x": 80.0,
+      "y": 15.0,
+      "radius": 8,
+      "description": "R1: Circle color changed"
+    },
+    {
+      "x": 15.0,
+      "y": 58.0,
+      "radius": 10,
+      "description": "R1: Building moved right"
+    },
+    {
+      "x": 50.0,
+      "y": 47.0,
+      "radius": 10,
+      "description": "R1: Tree color changed"
+    },
+    {
+      "x": 78.8,
+      "y": 66.3,
+      "radius": 5,
+      "description": "R1: Small circle removed"
+    },
+    {
+      "x": 18.8,
+      "y": 15.0,
+      "radius": 6,
+      "description": "R1: Star size changed"
+    }
+  ],
+  "round_2": [
+    {
+      "x": 80.0,
+      "y": 15.0,
+      "radius": 8,
+      "description": "R2: Circle color changed"
+    },
+    {
+      "x": 15.0,
+      "y": 58.0,
+      "radius": 10,
+      "description": "R2: Building moved right"
+    },
+    {
+      "x": 50.0,
+      "y": 47.0,
+      "radius": 10,
+      "description": "R2: Tree color changed"
+    },
+    {
+      "x": 78.8,
+      "y": 66.3,
+      "radius": 5,
+      "description": "R2: Small circle removed"
+    },
+    {
+      "x": 18.8,
+      "y": 15.0,
+      "radius": 6,
+      "description": "R2: Star size changed"
+    }
+  ],
+  "round_3": [
+    {
+      "x": 80.0,
+      "y": 15.0,
+      "radius": 8,
+      "description": "R3: Circle color changed"
+    },
+    {
+      "x": 15.0,
+      "y": 58.0,
+      "radius": 10,
+      "description": "R3: Building moved right"
+    },
+    {
+      "x": 50.0,
+      "y": 47.0,
+      "radius": 10,
+      "description": "R3: Tree color changed"
+    },
+    {
+      "x": 78.8,
+      "y": 66.3,
+      "radius": 5,
+      "description": "R3: Small circle removed"
+    },
+    {
+      "x": 18.8,
+      "y": 15.0,
+      "radius": 6,
+      "description": "R3: Star size changed"
+    }
+  ],
+  "round_4": [
+    {
+      "x": 80.0,
+      "y": 15.0,
+      "radius": 8,
+      "description": "R4: Circle color changed"
+    },
+    {
+      "x": 15.0,
+      "y": 58.0,
+      "radius": 10,
+      "description": "R4: Building moved right"
+    },
+    {
+      "x": 50.0,
+      "y": 47.0,
+      "radius": 10,
+      "description": "R4: Tree color changed"
+    },
+    {
+      "x": 78.8,
+      "y": 66.3,
+      "radius": 5,
+      "description": "R4: Small circle removed"
+    },
+    {
+      "x": 18.8,
+      "y": 15.0,
+      "radius": 6,
+      "description": "R4: Star size changed"
+    }
+  ],
+  "round_5": [
+    {
+      "x": 80.0,
+      "y": 15.0,
+      "radius": 8,
+      "description": "R5: Circle color changed"
+    },
+    {
+      "x": 15.0,
+      "y": 58.0,
+      "radius": 10,
+      "description": "R5: Building moved right"
+    },
+    {
+      "x": 50.0,
+      "y": 47.0,
+      "radius": 10,
+      "description": "R5: Tree color changed"
+    },
+    {
+      "x": 78.8,
+      "y": 66.3,
+      "radius": 5,
+      "description": "R5: Small circle removed"
+    },
+    {
+      "x": 18.8,
+      "y": 15.0,
+      "radius": 6,
+      "description": "R5: Star size changed"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+---
+description: Testing standards — comprehensive tests and UI tests
+alwaysApply: true
+---
+
+# Testing (DailyDiffs)
+
+- **Write comprehensive tests** for all non-trivial logic: tap/difference detection, scoring, streak logic, username validation, API routes.
+- **Test the UI**: include component tests and, where useful, integration tests for critical flows (e.g. play screen, login wall).
+- Prefer testing behavior and outcomes; avoid testing implementation details.
+- Keep tests fast and deterministic; mock Supabase and external APIs in unit/integration tests.
+- When adding a feature, add or update tests in the same change; do not leave tests for "later."

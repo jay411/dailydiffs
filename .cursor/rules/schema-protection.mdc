@@ -1,0 +1,12 @@
+---
+description: Do not delete or break database schema
+globs: "**/*.sql,**/SCHEMA.md,**/migrations/**"
+alwaysApply: false
+---
+
+# Schema and Migrations — Do Not Delete by Mistake
+
+- **Do not delete** table definitions, columns, indexes, RLS policies, triggers, or functions from `docs/SCHEMA.md` or from Supabase migration files unless explicitly asked to remove a specific part.
+- **Do not drop tables** or run destructive SQL (e.g. `DROP TABLE`, `DROP COLUMN`) without explicit user approval.
+- When editing schema or migrations: only add or alter when the task requires it; preserve existing structure.
+- If refactoring schema, propose the change first and implement only after approval.
