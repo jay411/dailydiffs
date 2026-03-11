@@ -3,7 +3,7 @@
 > This file is the single source of truth for what's done, in progress, and next.
 > Both Cursor and Claude Code should read this before starting work and update it after completing tasks.
 
-## Current Status: Day 1
+## Current Status: Day 2
 
 ---
 
@@ -40,22 +40,21 @@
 ## Day 2 — Full Game Loop + Scoring + Streaks
 
 ### TODO
-- [ ] Round progression: 1 → 2 → 3 → 4 → 5
-- [ ] Login gate triggers after Round 1 completes
-- [ ] Round transition screen between rounds
-- [ ] Scoring logic (base points + time bonus + round multiplier)
-- [ ] Streak tracking (consecutive days played)
-- [ ] Results screen after final round
-- [ ] Timezone-based 8 AM unlock logic
-- [ ] Write unit tests for scoring calculations
-- [ ] Write unit tests for streak logic
 - [ ] Git commits after each feature
 
 ### BLOCKED
-- Depends on Day 1 completion
+- (none)
 
 ### DONE
-- (nothing yet)
+- [x] Round progression: 1 → 2 → 3 → 4 → 5
+- [x] Login gate triggers after Round 1 completes
+- [x] Round transition screen between rounds (with round summary + score)
+- [x] Scoring logic (base points + time bonus + round multiplier) in `src/lib/scoring.ts`
+- [x] Streak tracking (consecutive days played) via `/api/session-complete` + DB triggers
+- [x] Results screen after final round (round breakdown, total score, streak, link to leaderboard)
+- [x] Timezone-based 8 AM unlock logic in `src/lib/puzzle-date.ts` (play + home use it)
+- [x] Write unit tests for scoring calculations
+- [x] Write unit tests for streak logic
 
 ---
 

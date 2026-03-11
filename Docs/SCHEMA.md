@@ -330,20 +330,42 @@ EXECUTE FUNCTION update_user_streak();
 
 ## Supabase Storage
 
-### Bucket: puzzles
-- Public bucket (images need to be accessible without auth)
+### Bucket: puzzles-pending (PRIVATE)
+- Private bucket — only accessible by admin and service role
+- Pipeline uploads generated images here
+- Admin reviews them in the /admin portal
 - File structure: `{date}/{round}_original.png`, `{date}/{round}_modified.png`
-- Example: `2026-03-15/3_original.png`, `2026-03-15/3_modified.png`
+- Example: `2026-03-22/3_original.png`, `2026-03-22/3_modified.png`
+
+### Bucket: puzzles (PUBLIC)
+- Public bucket — accessible by all players without auth
+- Only approved images are moved here from puzzles-pending
+- On admin "Approve": copy from puzzles-pending → puzzles, delete from puzzles-pending
 - CDN-cached by Cloudflare (same images served to all users)
+- File structure: same as puzzles-pending
 
 ### Storage Policies
 ```sql
--- Anyone can read puzzle images
+-- Anyone can read approved puzzle images
 CREATE POLICY "Puzzle images are public"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'puzzles');
 
--- Only service role can upload (pipeline uses service key)
+-- Only admin/service role can read pending images
+CREATE POLICY "Pending images are admin only"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'puzzles-pending' AND auth.email() = current_setting('app.admin_email'));
+
+-- Only service role can upload to either bucket (pipeline uses service key)
+```
+
+### Admin Approve Flow
+```
+1. Admin clicks "Approve" on a puzzle pair
+2. Server copies images: puzzles-pending/{date}/{round}_*.png → puzzles/{date}/{round}_*.png
+3. Server deletes originals from puzzles-pending
+4. Server updates puzzles table: status = 'approved', image URLs point to public bucket
+5. Images are now accessible to players
 ```
 
 ## Views (for safe public queries)

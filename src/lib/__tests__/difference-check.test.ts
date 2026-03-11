@@ -22,7 +22,7 @@ describe('findDifferenceAt', () => {
 
   it('returns -1 for already found differences', () => {
     expect(findDifferenceAt(25, 40, diffs, new Set([0]))).toBe(-1);
-    expect(findDifferenceAt(70, 15, diffs, new Set([1]))).toBe(0);
+    expect(findDifferenceAt(70, 15, diffs, new Set([1]))).toBe(-1);
   });
 
   it('matches when tap is on the radius boundary', () => {

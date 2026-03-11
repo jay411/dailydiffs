@@ -3,23 +3,24 @@
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePuzzle } from '@/hooks/usePuzzle';
-import { useGameState } from '@/hooks/useGameState';
+import { useGameState, clearRoundStartTime } from '@/hooks/useGameState';
+import { useGameSession } from '@/contexts/GameSessionContext';
 import { GameCanvas } from '@/components/GameCanvas';
 import { Timer } from '@/components/Timer';
-
-function getTodayDateString() {
-  const d = new Date();
-  return d.toISOString().slice(0, 10);
-}
+import { getPuzzleDateForNow } from '@/lib/puzzle-date';
 
 export default function PlayRoundPage() {
   const params = useParams();
   const router = useRouter();
   const round = Number(params?.round) || 1;
-  const date = getTodayDateString();
-  const { puzzle, loading, error } = usePuzzle(date, round);
+  const { puzzleDate } = getPuzzleDateForNow();
+  const { puzzle, loading, error } = usePuzzle(puzzleDate, round);
   const totalDiffs = puzzle?.differences_json?.length ?? 5;
-  const { foundIndices, markFound, allFound, timeSeconds } = useGameState(totalDiffs);
+  const { foundIndices, markFound, allFound, timeSeconds } = useGameState(totalDiffs, {
+    puzzleDate,
+    round,
+  });
+  const { addRoundResult } = useGameSession();
 
   if (loading) {
     return (
@@ -85,6 +86,15 @@ export default function PlayRoundPage() {
             {round === 1 ? (
               <Link
                 href="/auth/login?next=/play/2"
+                onClick={() => {
+                  addRoundResult({
+                    round,
+                    differencesFound: foundIndices.size,
+                    totalDifferences: differences.length,
+                    timeSeconds,
+                  });
+                  clearRoundStartTime(puzzleDate, round);
+                }}
                 className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6"
               >
                 Continue to Round 2 (sign in)
@@ -92,7 +102,16 @@ export default function PlayRoundPage() {
             ) : (
               <button
                 type="button"
-                onClick={() => router.push(round < 5 ? `/play/transition?from=${round}` : '/results')}
+                onClick={() => {
+                  addRoundResult({
+                    round,
+                    differencesFound: foundIndices.size,
+                    totalDifferences: differences.length,
+                    timeSeconds,
+                  });
+                  clearRoundStartTime(puzzleDate, round);
+                  router.push(round < 5 ? `/play/transition?from=${round}` : '/results');
+                }}
                 className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6"
               >
                 {round < 5 ? 'Next round' : 'See results'}

@@ -300,22 +300,24 @@ else:
   approve_for_review()
 ```
 
-## Step 6: Upload
+## Step 6: Upload to Pending
+
+Generated images go to the **private** `puzzles-pending` bucket. They only move to the public `puzzles` bucket when you approve them in the admin portal.
 
 ```python
-# Upload images to Supabase Storage
+# Upload images to PRIVATE puzzles-pending bucket
 original_url = supabase.storage.upload(
-  bucket="puzzles",
+  bucket="puzzles-pending",
   path=f"{date}/{round}_original.png",
   file=original_image
 )
 modified_url = supabase.storage.upload(
-  bucket="puzzles", 
+  bucket="puzzles-pending", 
   path=f"{date}/{round}_modified.png",
   file=modified_image
 )
 
-# Insert puzzle metadata
+# Insert puzzle metadata (URLs point to pending bucket for now)
 supabase.table("puzzles").insert({
   "date": scheduled_date,
   "round_number": round,
@@ -412,10 +414,14 @@ supabase.table("generation_logs").insert({
 ```
 
 ### Admin Actions
-- **Approve:** Sets puzzle status to 'approved', records reviewed_at timestamp
-- **Reject:** Sets status to 'rejected', prompts for optional reason, logs rejection
-- **Regenerate:** Triggers a new Gemini generation for that specific slot (day + round)
-- **Manual Upload:** Emergency fallback — upload custom image pair manually with difference coordinates
+- **Approve:** 
+  1. Copies images from `puzzles-pending` → `puzzles` (public bucket)
+  2. Deletes originals from `puzzles-pending`
+  3. Updates puzzle row: `status = 'approved'`, `image_original_url` and `image_modified_url` now point to public bucket
+  4. Records `reviewed_at` timestamp
+- **Reject:** Sets status to 'rejected', prompts for optional reason, logs rejection. Images stay in puzzles-pending (deleted on next batch generation or manually).
+- **Regenerate:** Triggers a new Gemini generation for that specific slot (day + round). Uploads new images to puzzles-pending.
+- **Manual Upload:** Emergency fallback — upload custom image pair manually to puzzles-pending with difference coordinates
 
 ### Batch Actions
 - "Approve All Pending" button (with confirmation dialog)

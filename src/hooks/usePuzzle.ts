@@ -4,6 +4,18 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase";
 import type { Puzzle, Difference } from "@/types/puzzle";
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+
+/** If url is a relative path (no protocol), return full Supabase Storage public URL for bucket "puzzles". */
+function resolveImageUrl(url: string): string {
+  if (!url || url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+  const path = url.replace(/^\//, "");
+  if (!SUPABASE_URL) return url;
+  return `${SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/public/puzzles/${path}`;
+}
+
 function parsePuzzle(
   row: { differences_json: unknown } & Record<string, unknown>,
 ): Puzzle {
@@ -12,7 +24,10 @@ function parsePuzzle(
     : typeof row.differences_json === "string"
       ? (JSON.parse(row.differences_json) as Difference[])
       : [];
-  return { ...row, differences_json: diffs } as Puzzle;
+  const parsed = { ...row, differences_json: diffs } as Puzzle;
+  parsed.image_original_url = resolveImageUrl(parsed.image_original_url);
+  parsed.image_modified_url = resolveImageUrl(parsed.image_modified_url);
+  return parsed;
 }
 
 /** Demo puzzle when Supabase is not configured or no published puzzle exists (Day 1 fallback). */
@@ -24,9 +39,9 @@ function getDemoPuzzle(roundNumber: number): Puzzle {
     "isometric",
     "photorealistic",
   ];
-  // Local static SVGs in /public so they always load, even offline or without external services.
-  const base = "/demo-original.svg";
-  const modified = "/demo-modified.svg";
+  // Placeholder images from public/place-holder-images
+  const base = "/place-holder-images/round1_original.png";
+  const modified = "/place-holder-images/round1_modified.png";
   const differences: Difference[] = [
     { x: 25, y: 40, radius: 5, description: "diff 1" },
     { x: 70, y: 15, radius: 4, description: "diff 2" },
