@@ -1,20 +1,32 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
 
 export default function LoginPage() {
+  const [authError, setAuthError] = useState<string | null>(null);
+
   const handleGoogleLogin = async () => {
-    const supabase = createClient();
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${origin}/auth/callback?next=/auth/username`,
-      },
-    });
-    if (error) {
-      console.error(error);
+    setAuthError(null);
+    try {
+      const supabase = createClient();
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${origin}/auth/callback?next=/auth/username`,
+        },
+      });
+      if (error) {
+        setAuthError(error.message);
+      }
+    } catch (err) {
+      setAuthError(
+        process.env.NEXT_PUBLIC_SUPABASE_URL
+          ? 'Sign-in failed. Try again.'
+          : 'Sign-in not configured. Add Supabase URL and anon key to .env.local to enable login.'
+      );
     }
   };
 
@@ -34,6 +46,9 @@ export default function LoginPage() {
         >
           Continue with Google
         </button>
+        {authError && (
+          <p className="text-red-600 dark:text-red-400 text-center text-sm">{authError}</p>
+        )}
         <p className="text-slate-500 dark:text-slate-500 text-center text-xs">
           4 more rounds waiting…
         </p>

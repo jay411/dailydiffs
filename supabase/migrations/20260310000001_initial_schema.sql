@@ -247,3 +247,23 @@ SELECT
   dl.date
 FROM daily_leaderboard dl
 JOIN users u ON dl.user_id = u.id;
+
+-- Storage buckets and policies (puzzles + puzzles-pending)
+-- These rely only on Supabase's existing storage schema.
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES
+  ('puzzles', 'puzzles', true, 5242880, array['image/png', 'image/jpeg', 'image/webp']),
+  ('puzzles-pending', 'puzzles-pending', false, 5242880, array['image/png', 'image/jpeg', 'image/webp'])
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "Puzzle images are public"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'puzzles');
+
+CREATE POLICY "Pending images are admin only"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'puzzles-pending'
+    AND (auth.jwt() ->> 'email') = current_setting('app.admin_email', true)
+  );

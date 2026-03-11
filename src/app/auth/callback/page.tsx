@@ -10,16 +10,24 @@ export default function AuthCallbackPage() {
   const [status, setStatus] = useState<'loading' | 'done' | 'error'>('loading');
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setStatus('done');
-        const next = searchParams.get('next') || '/play/2';
-        router.replace(next);
-      } else {
-        setStatus('error');
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (cancelled) return;
+        if (session) {
+          setStatus('done');
+          const next = searchParams.get('next') || '/play/2';
+          router.replace(next);
+        } else {
+          setStatus('error');
+        }
+      } catch {
+        if (!cancelled) setStatus('error');
       }
-    });
+    })();
+    return () => { cancelled = true; };
   }, [router, searchParams]);
 
   if (status === 'loading') {
