@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
-import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { getSupabaseAdmin, getAdminDb } from '@/lib/supabase-admin';
+import { verifyCookieToken, COOKIE_NAME } from '@/lib/admin-2fa';
 import { AdminClient } from './AdminClient';
 import type { Difference } from '@/types/puzzle';
 
@@ -21,6 +23,18 @@ export interface AdminStats {
   rejectionRate: number;
 }
 
+interface PuzzleRow {
+  id: string;
+  date: string;
+  round_number: number;
+  art_style: string;
+  difficulty_score: number | null;
+  status: string;
+  image_original_url: string;
+  image_modified_url: string;
+  differences_json: unknown;
+}
+
 export default async function AdminPage() {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -29,15 +43,22 @@ export default async function AdminPage() {
     redirect('/');
   }
 
+  // 2FA check — require valid signed cookie
+  const cookieStore = await cookies();
+  const twoFAToken = cookieStore.get(COOKIE_NAME)?.value;
+  if (!twoFAToken || !verifyCookieToken(twoFAToken, user.email)) {
+    redirect('/admin/verify');
+  }
+
   const admin = getSupabaseAdmin();
 
-  const { data: puzzles } = await admin
+  const { data: rawPuzzles } = await getAdminDb()
     .from('puzzles')
     .select('id, date, round_number, art_style, difficulty_score, status, image_original_url, image_modified_url, differences_json')
     .order('date', { ascending: false });
 
   const today = new Date().toISOString().slice(0, 10);
-  const allPuzzles = puzzles ?? [];
+  const allPuzzles = (rawPuzzles ?? []) as PuzzleRow[];
 
   // Stats
   const approvedQueueDays = new Set(

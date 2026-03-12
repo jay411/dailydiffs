@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
-import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { getSupabaseAdmin, getAdminDb } from '@/lib/supabase-admin';
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabaseClient();
@@ -13,14 +13,15 @@ export async function POST(req: NextRequest) {
   const { puzzleId } = body;
   if (!puzzleId) return NextResponse.json({ error: 'Missing puzzleId' }, { status: 400 });
 
-  const admin = getSupabaseAdmin();
+  const admin = getSupabaseAdmin(); // for storage
+  const db = getAdminDb();          // for DB
 
   // Fetch the puzzle row
-  const { data: puzzle, error: fetchErr } = await admin
+  const { data: puzzle, error: fetchErr } = await db
     .from('puzzles')
-    .select('*')
+    .select('status, image_original_url, image_modified_url')
     .eq('id', puzzleId)
-    .single();
+    .single() as { data: { status: string; image_original_url: string; image_modified_url: string } | null; error: unknown };
 
   if (fetchErr || !puzzle) {
     return NextResponse.json({ error: 'Puzzle not found' }, { status: 404 });
@@ -31,8 +32,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Copy images from puzzles-pending to puzzles (public) bucket
-  const origPath = puzzle.image_original_url as string;
-  const modPath = puzzle.image_modified_url as string;
+  const origPath = puzzle.image_original_url;
+  const modPath = puzzle.image_modified_url;
 
   for (const path of [origPath, modPath]) {
     const { data: file, error: dlErr } = await admin.storage.from('puzzles-pending').download(path);
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
   const publicModUrl = `${baseUrl}/storage/v1/object/public/puzzles/${modPath}`;
 
   // Update puzzle row
-  const { error: updateErr } = await admin
+  const { error: updateErr } = await db
     .from('puzzles')
     .update({
       status: 'published',
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
     .eq('id', puzzleId);
 
   if (updateErr) {
-    return NextResponse.json({ error: updateErr.message }, { status: 500 });
+    return NextResponse.json({ error: (updateErr as { message: string }).message }, { status: 500 });
   }
 
   // Delete from pending bucket

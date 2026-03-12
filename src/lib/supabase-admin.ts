@@ -15,3 +15,13 @@ export function getSupabaseAdmin() {
   });
   return _client;
 }
+
+/**
+ * Untyped admin client for use without generated DB types.
+ * Use this when the Supabase client returns `never` due to missing schema types.
+ * eslint-disable-next-line @typescript-eslint/no-explicit-any
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getAdminDb(): any {
+  return getSupabaseAdmin();
+}

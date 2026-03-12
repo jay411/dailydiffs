@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
-import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { getSupabaseAdmin, getAdminDb } from '@/lib/supabase-admin';
 import {
   generateScenePrompt,
   generateImage,
@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
   }
 
   const startTime = Date.now();
-  const admin = getSupabaseAdmin();
+  const admin = getSupabaseAdmin(); // for storage operations
+  const db = getAdminDb();          // for DB operations (untyped escape hatch)
   const artStyle = getArtStyleName(roundNumber);
 
   try {
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     if (!origSafety.safe || !modSafety.safe) {
       const issues = [...origSafety.issues, ...modSafety.issues];
-      await admin.from('generation_logs').insert({
+      await db.from('generation_logs').insert({
         batch_date: date,
         art_style: artStyle,
         prompt_used: sceneData.scene,
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
     const qa = await scoreQuality(originalBuffer, modifiedBuffer);
 
     if (qa.score < 4 || qa.score > 9) {
-      await admin.from('generation_logs').insert({
+      await db.from('generation_logs').insert({
         batch_date: date,
         art_style: artStyle,
         prompt_used: sceneData.scene,
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 8: Upsert puzzle row in DB (paths stored, not full URLs — pending bucket is private)
-    const { data: puzzle, error: dbErr } = await admin
+    const { data: puzzle, error: dbErr } = await db
       .from('puzzles')
       .upsert({
         date,
@@ -123,7 +124,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 9: Log generation
-    await admin.from('generation_logs').insert({
+    await db.from('generation_logs').insert({
       batch_date: date,
       art_style: artStyle,
       prompt_used: sceneData.scene,
@@ -135,7 +136,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, puzzleId: puzzle.id, qaScore: qa.score });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    await admin.from('generation_logs').insert({
+    await db.from('generation_logs').insert({
       batch_date: date,
       art_style: artStyle,
       generation_time_seconds: (Date.now() - startTime) / 1000,
