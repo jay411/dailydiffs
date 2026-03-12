@@ -40,8 +40,8 @@ function getDemoPuzzle(roundNumber: number): Puzzle {
     "photorealistic",
   ];
   // Placeholder images from public/place-holder-images
-  const base = "/place-holder-images/round1_original.png";
-  const modified = "/place-holder-images/round1_modified.png";
+  const base = `/place-holder-images/round${roundNumber}_original.png`;
+  const modified = `/place-holder-images/round${roundNumber}_modified.png`;
   const differences: Difference[] = [
     { x: 25, y: 40, radius: 5, description: "diff 1" },
     { x: 70, y: 15, radius: 4, description: "diff 2" },

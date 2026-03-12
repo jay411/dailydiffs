@@ -40,7 +40,7 @@
 ## Day 2 — Full Game Loop + Scoring + Streaks
 
 ### TODO
-- [ ] Git commits after each feature
+- (none)
 
 ### BLOCKED
 - (none)
@@ -55,33 +55,36 @@
 - [x] Timezone-based 8 AM unlock logic in `src/lib/puzzle-date.ts` (play + home use it)
 - [x] Write unit tests for scoring calculations
 - [x] Write unit tests for streak logic
+- [x] Git commits after each feature
 
 ---
 
 ## Day 3 — Gemini Image Pipeline + Admin Portal
 
 ### TODO
-- [ ] Build /admin page (restricted to admin email only)
-- [ ] Admin dashboard: approved queue depth, pending count, rejection rate
-- [ ] "Generate New Batch" button → calls /api/generate-puzzles
-- [ ] "Generate Single Day" button
-- [ ] Gemini prompt generation (5 art styles)
-- [ ] Gemini image generation (base images)
-- [ ] Gemini image editing (create differences)
-- [ ] Content safety check (Gemini Vision scan)
-- [ ] QA validation (difficulty scoring)
-- [ ] Upload to Supabase Storage + DB (status: pending)
-- [ ] Admin review interface: grid of pending pairs
-- [ ] Expanded view: side-by-side images with diff zones highlighted
-- [ ] Approve / Reject / Regenerate buttons
-- [ ] Write tests for safety check logic
+- [ ] Regenerate button (per-puzzle) — currently approve/reject only
 - [ ] Git commits after each feature
 
 ### BLOCKED
-- Depends on Day 1-2 completion
+- (none)
 
 ### DONE
-- (nothing yet)
+- [x] Build /admin page (restricted to admin email only)
+- [x] Admin dashboard: approved queue depth, pending count, rejection rate
+- [x] "Generate Single Day" button → calls /api/generate-puzzles round-by-round with progress
+- [x] Gemini prompt generation (5 art styles) — `src/lib/gemini.ts` `generateScenePrompt`
+- [x] Gemini image generation (base images) — `generateImage`
+- [x] Gemini image editing (create differences) — `editImage` (Approach A)
+- [x] Content safety check (Gemini Vision scan) — `checkImageSafety`
+- [x] QA validation (difficulty scoring) — `scoreQuality`, auto-reject < 4 or > 9
+- [x] Upload to Supabase Storage + DB (status: pending) — `puzzles-pending` private bucket
+- [x] Admin review interface: grid of pending pairs grouped by date — `PuzzleCard`
+- [x] Expanded view: side-by-side images with diff zones highlighted — `ExpandedPuzzleView`
+- [x] Approve / Reject buttons (approve copies to public bucket, sets status=published)
+- [x] Write tests for safety check logic — 13 tests in `gemini-safety.test.ts`
+- [x] `src/lib/supabase-admin.ts` — service-role client
+- [x] `src/app/api/admin/stats/route.ts`, `approve/route.ts`, `reject/route.ts`
+- [x] `src/app/api/generate-puzzles/route.ts` — full pipeline with logging
 
 ---
 
@@ -149,3 +152,6 @@
 - **Cursor:** UI components, page layouts, styling, visual iteration
 - **Claude Code:** API routes, database queries, Gemini pipeline, testing, git operations
 - **Either:** Bug fixes, refactoring, configuration
+
+### Git
+- **Prefer smaller commits per feature** (e.g. one commit for scoring, one for session-complete API, one for timer persistence) so history stays easy to review and revert.
