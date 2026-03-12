@@ -136,13 +136,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, puzzleId: puzzle.id, qaScore: qa.score });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    await db.from('generation_logs').insert({
-      batch_date: date,
-      art_style: artStyle,
-      generation_time_seconds: (Date.now() - startTime) / 1000,
-      status: 'failed',
-      rejection_reason: message,
-    }).catch(() => null); // don't fail if logging fails
+    try {
+      await db.from('generation_logs').insert({
+        batch_date: date,
+        art_style: artStyle,
+        generation_time_seconds: (Date.now() - startTime) / 1000,
+        status: 'failed',
+        rejection_reason: message,
+      });
+    } catch { /* don't fail if logging fails */ }
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

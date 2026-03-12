@@ -5,8 +5,8 @@ import {
 } from '@google/generative-ai';
 import type { Difference } from '@/types/puzzle';
 
-const TEXT_MODEL = 'gemini-2.0-flash';
-const IMAGE_MODEL = 'gemini-2.0-flash-exp-image-generation';
+const TEXT_MODEL = 'gemini-2.5-flash';
+const IMAGE_MODEL = 'gemini-2.5-flash-image';
 
 const SAFETY_SETTINGS = [
   { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE },

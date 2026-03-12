@@ -14,9 +14,13 @@ export async function createServerSupabaseClient() {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) =>
-          cookieStore.set(name, value, options)
-        );
+        try {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        } catch {
+          // Ignored: cookies can only be set in Server Actions or Route Handlers
+        }
       },
     },
   });

@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import QRCode from 'qrcode';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
-import { getTOTPUri, newTOTPSecret } from '@/lib/admin-2fa';
+import { getTOTPUri, newTOTPSecret, verifyCookieToken, COOKIE_NAME } from '@/lib/admin-2fa';
 
 export default async function AdminSetupPage() {
   const supabase = await createServerSupabaseClient();
@@ -9,6 +10,13 @@ export default async function AdminSetupPage() {
 
   if (!user?.email || user.email !== process.env.ADMIN_EMAIL) {
     redirect('/');
+  }
+
+  // If already authenticated with 2FA, no need to show setup again
+  const cookieStore = await cookies();
+  const twoFAToken = cookieStore.get(COOKIE_NAME)?.value;
+  if (twoFAToken && verifyCookieToken(twoFAToken, user.email)) {
+    redirect('/admin');
   }
 
   const secretSet = !!process.env.ADMIN_TOTP_SECRET;
