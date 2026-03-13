@@ -62,7 +62,7 @@
 ## Day 3 — Gemini Image Pipeline + Admin Portal
 
 ### TODO
-- [ ] Regenerate button (per-puzzle) — currently approve/reject only
+- [x] Regenerate button (per-puzzle) — calls /api/generate-puzzles with date+roundNumber (upsert overwrites)
 - [ ] Git commits after each feature
 
 ### BLOCKED
