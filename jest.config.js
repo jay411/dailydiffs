@@ -10,6 +10,7 @@ const config = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   testMatch: ['**/__tests__/**/*.test.[jt]s?(x)', '**/*.test.[jt]s?(x)'],
+  testPathIgnorePatterns: ['<rootDir>/.claude/worktrees/'],
 };
 
 module.exports = createJestConfig(config);

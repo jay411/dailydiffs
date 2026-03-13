@@ -3,7 +3,7 @@
 > This file is the single source of truth for what's done, in progress, and next.
 > Both Cursor and Claude Code should read this before starting work and update it after completing tasks.
 
-## Current Status: Day 4
+## Current Status: Day 5
 
 ---
 
@@ -154,6 +154,9 @@
 - [x] Loading states and error handling — skeleton loader in play page; image error state in GameCanvas; `onMiss` prop for wrong-tap tracking
 - [x] `watchedAdForRound5` wired end-to-end: GameSessionContext → transition page → results page → `/api/session-complete`
 - [x] Tests: 12 test suites, 71 tests passing (added posthog, InterstitialAd, RewardedVideoAd tests)
+- [x] Tap hit area: minimum effective radius 5% so small diff circles still register (`difference-check.ts`)
+- [x] Puzzle date: use local date parts for `puzzleDate` (fix timezone bugs; was `toISOString` UTC) — `puzzle-date.ts`
+- [x] Jest: ignore `.claude/worktrees/` so `npm test` only runs main src tests
 
 ---
 

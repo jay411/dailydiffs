@@ -17,7 +17,8 @@ export function findDifferenceAt(
     const dx = tapXPercent - d.x;
     const dy = tapYPercent - d.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist <= d.radius) return i;
+    const effectiveRadius = Math.max(d.radius, 5);
+    if (dist <= effectiveRadius) return i;
   }
   return -1;
 }
