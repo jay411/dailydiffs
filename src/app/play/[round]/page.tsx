@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePuzzle } from '@/hooks/usePuzzle';
@@ -9,15 +9,7 @@ import { useGameSession } from '@/contexts/GameSessionContext';
 import { GameCanvas } from '@/components/GameCanvas';
 import { Timer } from '@/components/Timer';
 import { getPuzzleDateForNow } from '@/lib/puzzle-date';
-
-// Placeholder leaderboard — wire up to /api/leaderboard when ready
-const PLACEHOLDER_LB = [
-  { rank: 1, username: 'jayraval', score: 1240, streak: 7 },
-  { rank: 2, username: 'ada_codes', score: 1180, streak: 5 },
-  { rank: 3, username: 'bob_42', score: 1120, streak: 3 },
-  { rank: 4, username: 'sara', score: 980, streak: 1 },
-  { rank: 5, username: 'mike', score: 940, streak: 0 },
-];
+import type { LeaderboardEntry } from '@/app/api/leaderboard/route';
 
 const RANK_EMOJI = ['🥇', '🥈', '🥉'];
 
@@ -27,6 +19,20 @@ function rankColor(rank: number) {
   if (rank === 3) return 'text-amber-700';
   return 'text-slate-500';
 }
+
+type GroupInfo = {
+  id: string;
+  name: string;
+  invite_code: string;
+};
+
+type GroupEntry = {
+  rank: number | null;
+  username: string;
+  score: number | null;
+  time_seconds: number | null;
+  is_current_user: boolean;
+};
 
 export default function PlayRoundPage() {
   const params = useParams();
@@ -41,6 +47,53 @@ export default function PlayRoundPage() {
   });
   const { addRoundResult } = useGameSession();
   const [activeSheet, setActiveSheet] = useState<'scores' | 'group' | 'share' | null>(null);
+
+  // Leaderboard state
+  const [lbEntries, setLbEntries] = useState<LeaderboardEntry[]>([]);
+  const [lbLoaded, setLbLoaded] = useState(false);
+
+  // Groups state
+  const [myGroup, setMyGroup] = useState<GroupInfo | null>(null);
+  const [groupEntries, setGroupEntries] = useState<GroupEntry[]>([]);
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [groupTab, setGroupTab] = useState<'create' | 'join'>('create');
+  const [groupName, setGroupName] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [groupLoading, setGroupLoading] = useState(false);
+  const [groupError, setGroupError] = useState('');
+  const [inviteCopied, setInviteCopied] = useState(false);
+
+  // Load leaderboard
+  useEffect(() => {
+    fetch(`/api/leaderboard?date=${puzzleDate}&limit=5`)
+      .then((r) => r.json())
+      .then((data: { entries?: LeaderboardEntry[] }) => {
+        if (data.entries) setLbEntries(data.entries);
+      })
+      .catch(() => {})
+      .finally(() => setLbLoaded(true));
+  }, [puzzleDate]);
+
+  // Load user's group (from localStorage cache then API)
+  useEffect(() => {
+    const cached = localStorage.getItem('dailydiffs_group');
+    if (cached) {
+      try {
+        const g = JSON.parse(cached) as GroupInfo;
+        setMyGroup(g);
+        fetchGroupLeaderboard(g.id);
+      } catch {}
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchGroupLeaderboard = useCallback(async (groupId: string) => {
+    try {
+      const res = await fetch(`/api/groups/${groupId}/leaderboard`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.entries) setGroupEntries(data.entries);
+    } catch {}
+  }, []);
 
   if (loading) {
     return (
@@ -76,14 +129,193 @@ export default function PlayRoundPage() {
     }
   }
 
-  // Ticker text — duplicated so the loop is seamless
-  const tickerSegment = PLACEHOLDER_LB.map(
-    (e) =>
-      `${RANK_EMOJI[e.rank - 1] ?? `${e.rank}.`} @${e.username} — ${e.score.toLocaleString()} pts${e.streak > 0 ? ` 🔥${e.streak}` : ''}`
-  ).join('   ·   ');
+  async function handleCreateGroup() {
+    if (!groupName.trim()) return;
+    setGroupLoading(true);
+    setGroupError('');
+    try {
+      const res = await fetch('/api/groups/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: groupName.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setGroupError(data.error ?? 'Failed to create group');
+        return;
+      }
+      const g: GroupInfo = data.group;
+      setMyGroup(g);
+      localStorage.setItem('dailydiffs_group', JSON.stringify(g));
+      fetchGroupLeaderboard(g.id);
+      setShowGroupModal(false);
+      setGroupName('');
+    } catch {
+      setGroupError('Network error');
+    } finally {
+      setGroupLoading(false);
+    }
+  }
+
+  async function handleJoinGroup() {
+    if (!inviteCode.trim()) return;
+    setGroupLoading(true);
+    setGroupError('');
+    try {
+      const res = await fetch('/api/groups/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invite_code: inviteCode.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setGroupError(data.error ?? 'Invalid invite code');
+        return;
+      }
+      const g: GroupInfo = data.group;
+      setMyGroup(g);
+      localStorage.setItem('dailydiffs_group', JSON.stringify(g));
+      fetchGroupLeaderboard(g.id);
+      setShowGroupModal(false);
+      setInviteCode('');
+    } catch {
+      setGroupError('Network error');
+    } finally {
+      setGroupLoading(false);
+    }
+  }
+
+  function handleCopyInvite() {
+    if (!myGroup) return;
+    const url = `${window.location.origin}/play/1?join=${myGroup.invite_code}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setInviteCopied(true);
+      setTimeout(() => setInviteCopied(false), 2000);
+    });
+  }
+
+  // Ticker text — duplicated for seamless scroll
+  const lbForTicker = lbLoaded && lbEntries.length > 0 ? lbEntries : [];
+  const tickerSegment =
+    lbForTicker.length > 0
+      ? lbForTicker
+          .map(
+            (e) =>
+              `${RANK_EMOJI[e.rank - 1] ?? `${e.rank}.`} @${e.username} — ${e.score.toLocaleString()} pts${e.streak > 0 ? ` 🔥${e.streak}` : ''}`,
+          )
+          .join('   ·   ')
+      : '⏳ Loading today\'s scores…';
+
+  // Group modal
+  const GroupModal = showGroupModal ? (
+    <div
+      className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4"
+      onClick={() => setShowGroupModal(false)}
+    >
+      <div
+        className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-700"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-slate-100 font-bold text-lg mb-4">
+          {myGroup ? `Group: ${myGroup.name}` : 'Create or Join a Group'}
+        </h2>
+
+        {myGroup ? (
+          <div className="flex flex-col gap-3">
+            <p className="text-slate-400 text-sm">
+              Invite code: <span className="font-mono text-emerald-400">{myGroup.invite_code}</span>
+            </p>
+            <button
+              type="button"
+              onClick={handleCopyInvite}
+              className="rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm py-2.5 transition-colors"
+            >
+              {inviteCopied ? '✓ Copied!' : '🔗 Copy invite link'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMyGroup(null);
+                setGroupEntries([]);
+                localStorage.removeItem('dailydiffs_group');
+                setShowGroupModal(false);
+              }}
+              className="text-xs text-slate-600 hover:text-red-400 transition-colors mt-1"
+            >
+              Leave group
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setGroupTab('create')}
+                className={`flex-1 text-sm py-2 rounded-lg transition-colors ${groupTab === 'create' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-400'}`}
+              >
+                Create
+              </button>
+              <button
+                type="button"
+                onClick={() => setGroupTab('join')}
+                className={`flex-1 text-sm py-2 rounded-lg transition-colors ${groupTab === 'join' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-400'}`}
+              >
+                Join
+              </button>
+            </div>
+
+            {groupTab === 'create' ? (
+              <div className="flex flex-col gap-3">
+                <input
+                  type="text"
+                  placeholder="Group name"
+                  value={groupName}
+                  onChange={(e) => setGroupName(e.target.value)}
+                  maxLength={50}
+                  className="bg-slate-700 text-slate-100 placeholder-slate-500 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateGroup}
+                  disabled={groupLoading || !groupName.trim()}
+                  className="rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold py-2.5 text-sm transition-colors"
+                >
+                  {groupLoading ? 'Creating…' : 'Create Group'}
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <input
+                  type="text"
+                  placeholder="Invite code (e.g. A1B2C3D4)"
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                  maxLength={10}
+                  className="bg-slate-700 text-slate-100 placeholder-slate-500 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleJoinGroup}
+                  disabled={groupLoading || !inviteCode.trim()}
+                  className="rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold py-2.5 text-sm transition-colors"
+                >
+                  {groupLoading ? 'Joining…' : 'Join Group'}
+                </button>
+              </div>
+            )}
+
+            {groupError && (
+              <p className="text-red-400 text-xs mt-2">{groupError}</p>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  ) : null;
 
   return (
     <div className="h-dvh flex flex-col bg-slate-900 overflow-hidden">
+      {GroupModal}
 
       {/* ── Header ── */}
       <header className="flex items-center justify-between px-4 h-12 bg-slate-800 border-b border-slate-700 flex-shrink-0">
@@ -109,30 +341,70 @@ export default function PlayRoundPage() {
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3">
               Today&apos;s Top
             </p>
-            {PLACEHOLDER_LB.map((e) => (
-              <div
-                key={e.rank}
-                className="flex justify-between items-center py-1.5 border-b border-slate-700/40 text-sm"
-              >
-                <span className="text-slate-300 truncate max-w-[130px]">
-                  {RANK_EMOJI[e.rank - 1] ?? `${e.rank}.`} @{e.username}
-                </span>
-                <span className={rankColor(e.rank)}>{e.score.toLocaleString()}</span>
-              </div>
-            ))}
+            {!lbLoaded ? (
+              <p className="text-xs text-slate-600 italic">Loading…</p>
+            ) : lbEntries.length === 0 ? (
+              <p className="text-xs text-slate-600 italic">No scores yet today</p>
+            ) : (
+              lbEntries.map((e) => (
+                <div
+                  key={e.rank}
+                  className={`flex justify-between items-center py-1.5 border-b border-slate-700/40 text-sm ${e.is_current_user ? 'bg-emerald-950/30 -mx-2 px-2 rounded' : ''}`}
+                >
+                  <span className="text-slate-300 truncate max-w-[130px]">
+                    {RANK_EMOJI[e.rank - 1] ?? `${e.rank}.`} @{e.username}
+                    {e.is_current_user && <span className="text-emerald-500 text-[10px] ml-1">you</span>}
+                  </span>
+                  <span className={rankColor(e.rank)}>{e.score.toLocaleString()}</span>
+                </div>
+              ))
+            )}
+            <Link
+              href="/leaderboard"
+              className="block mt-2 text-[10px] text-slate-600 hover:text-slate-400 transition-colors"
+            >
+              View full leaderboard →
+            </Link>
           </div>
 
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
               My Group
             </p>
-            <p className="text-xs text-slate-600 italic mb-2">No group yet</p>
-            <button
-              type="button"
-              className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
-            >
-              + Create or join a group
-            </button>
+            {myGroup ? (
+              <>
+                <p className="text-xs text-slate-400 font-semibold mb-2">{myGroup.name}</p>
+                {groupEntries.slice(0, 5).map((e, i) => (
+                  <div
+                    key={i}
+                    className={`flex justify-between items-center py-1 border-b border-slate-700/40 text-xs ${e.is_current_user ? 'text-emerald-400' : 'text-slate-400'}`}
+                  >
+                    <span className="truncate max-w-[110px]">
+                      {e.rank ? `${e.rank}.` : '–'} @{e.username}
+                    </span>
+                    <span>{e.score != null ? e.score.toLocaleString() : '—'}</span>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setShowGroupModal(true)}
+                  className="mt-2 text-[10px] text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  Invite friends →
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-slate-600 italic mb-2">No group yet</p>
+                <button
+                  type="button"
+                  onClick={() => setShowGroupModal(true)}
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  + Create or join a group
+                </button>
+              </>
+            )}
           </div>
         </aside>
 
@@ -213,7 +485,6 @@ export default function PlayRoundPage() {
 
       {/* ── Bottom ticker — desktop only ── */}
       <div className="hidden xl:flex h-9 bg-slate-800/60 border-t border-slate-700/40 overflow-hidden items-center flex-shrink-0">
-        {/* Duplicate content so seamless loop works: first half scrolls to reveal second copy */}
         <div
           className="whitespace-nowrap flex text-xs text-slate-500"
           style={{ animation: 'ticker 30s linear infinite' }}
@@ -268,34 +539,76 @@ export default function PlayRoundPage() {
             {/* Drag handle */}
             <div className="w-10 h-1 bg-slate-600 rounded-full mx-auto mb-4" />
 
-            {(activeSheet === 'scores' || activeSheet === 'group') && (
+            {activeSheet === 'scores' && (
               <>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3">
                   Today&apos;s Leaderboard
                 </p>
-                {PLACEHOLDER_LB.map((e) => (
-                  <div
-                    key={e.rank}
-                    className="flex justify-between items-center py-2.5 border-b border-slate-700/60 text-sm"
-                  >
-                    <span className="text-slate-300">
-                      {RANK_EMOJI[e.rank - 1] ?? `${e.rank}.`} @{e.username}
-                    </span>
-                    <span className={rankColor(e.rank)}>{e.score.toLocaleString()}</span>
-                  </div>
-                ))}
-                <div className="mt-5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
-                    My Group
-                  </p>
-                  <p className="text-xs text-slate-600 italic mb-2">No group yet</p>
-                  <button
-                    type="button"
-                    className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
-                  >
-                    + Create or join a group
-                  </button>
-                </div>
+                {!lbLoaded ? (
+                  <p className="text-xs text-slate-600 italic">Loading…</p>
+                ) : lbEntries.length === 0 ? (
+                  <p className="text-xs text-slate-600 italic">No scores yet today</p>
+                ) : (
+                  lbEntries.map((e) => (
+                    <div
+                      key={e.rank}
+                      className={`flex justify-between items-center py-2.5 border-b border-slate-700/60 text-sm ${e.is_current_user ? 'text-emerald-400' : ''}`}
+                    >
+                      <span className="text-slate-300">
+                        {RANK_EMOJI[e.rank - 1] ?? `${e.rank}.`} @{e.username}
+                        {e.is_current_user && <span className="text-[10px] ml-1">(you)</span>}
+                      </span>
+                      <span className={rankColor(e.rank)}>{e.score.toLocaleString()}</span>
+                    </div>
+                  ))
+                )}
+                <Link
+                  href="/leaderboard"
+                  className="block mt-3 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                  onClick={() => setActiveSheet(null)}
+                >
+                  View full leaderboard →
+                </Link>
+              </>
+            )}
+
+            {activeSheet === 'group' && (
+              <>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3">
+                  My Group
+                </p>
+                {myGroup ? (
+                  <>
+                    <p className="text-sm text-slate-200 font-semibold mb-3">{myGroup.name}</p>
+                    {groupEntries.map((e, i) => (
+                      <div
+                        key={i}
+                        className={`flex justify-between items-center py-2 border-b border-slate-700/60 text-sm ${e.is_current_user ? 'text-emerald-400' : 'text-slate-300'}`}
+                      >
+                        <span>{e.rank ? `${e.rank}.` : '–'} @{e.username}</span>
+                        <span>{e.score != null ? e.score.toLocaleString() : '—'}</span>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setShowGroupModal(true)}
+                      className="mt-4 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      🔗 Invite friends
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-slate-600 italic mb-3">No group yet</p>
+                    <button
+                      type="button"
+                      onClick={() => { setActiveSheet(null); setShowGroupModal(true); }}
+                      className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      + Create or join a group
+                    </button>
+                  </>
+                )}
               </>
             )}
 
