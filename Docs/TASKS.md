@@ -122,6 +122,10 @@
 - [x] Share buttons UI scaffolded (Twitter/X, Copy, Link — wire up actions)
 - [x] My Group UI scaffolded in left panel + mobile sheet with "+ Create or join a group" hook
 
+### Bug Fixes (post Day 4)
+- [x] Click detection + DifferenceMarker positions corrected for object-contain pillarboxing (square Gemini images in 4:3 container were offset by ~12.5%)
+- [x] Found differences now persist to sessionStorage — navigating away and back no longer resets progress
+
 ---
 
 ## Day 5 — Ads + Analytics + Polish + Deploy
@@ -133,6 +137,7 @@
 - [ ] Placeholder ad spaces (until AdSense approval)
 - [ ] PostHog setup + all core events (see docs/ANALYTICS.md)
 - [ ] Sentry error monitoring setup
+- [ ] Admin puzzle generation: use admin's local date (not UTC) when setting the `date` field, so puzzle dates match what players see in their timezone (currently UTC date is used, causing mismatch for UTC- users)
 - [ ] Mobile responsiveness pass
 - [ ] Loading states and error handling
 - [ ] Deploy to Vercel
