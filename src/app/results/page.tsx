@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useGameSession } from '@/contexts/GameSessionContext';
 import { generateShareCard, buildShareText, type ShareCardData } from '@/lib/share-card';
+import { trackEvent, EVENTS } from '@/lib/posthog';
 
 type SessionCompleteResponse = {
   ok?: boolean;
@@ -19,7 +20,7 @@ type LeaderboardRankResponse = {
 };
 
 export default function ResultsPage() {
-  const { roundResults, totalScore, totalTimeSeconds, resetSession } = useGameSession();
+  const { roundResults, totalScore, totalTimeSeconds, resetSession, watchedAdForRound5 } = useGameSession();
   const [streak, setStreak] = useState<{ count: number | null; longest: number | null }>({
     count: null,
     longest: null,
@@ -50,7 +51,7 @@ export default function ResultsPage() {
         roundsCompleted: roundResults.length,
         totalScore,
         totalTimeSeconds,
-        watchedAdForRound5: false,
+        watchedAdForRound5,
       }),
     })
       .then((res) => res.json() as Promise<SessionCompleteResponse>)
@@ -59,6 +60,12 @@ export default function ResultsPage() {
         if (data.ok && data.streakCount != null && data.longestStreak != null) {
           setStreak({ count: data.streakCount, longest: data.longestStreak });
         }
+        trackEvent(EVENTS.SESSION_COMPLETED, {
+          rounds_completed: roundResults.length,
+          total_score: totalScore,
+          total_time_seconds: Math.round(totalTimeSeconds),
+          watched_ad_for_round5: watchedAdForRound5,
+        });
         // Fetch rank after session is recorded
         fetchRank();
       })
@@ -74,12 +81,14 @@ export default function ResultsPage() {
   };
 
   async function handleShareTwitter() {
+    trackEvent(EVENTS.SHARE_CLICKED, { platform: 'twitter' });
     const text = buildShareText(shareData);
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
   async function handleCopyText() {
+    trackEvent(EVENTS.SHARE_CLICKED, { platform: 'copy' });
     const text = buildShareText(shareData);
     try {
       await navigator.clipboard.writeText(text);
@@ -117,7 +126,7 @@ export default function ResultsPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-900">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 pb-[62px] xl:pb-[102px] bg-slate-50 dark:bg-slate-900">
       <main className="max-w-sm w-full flex flex-col gap-6 text-center">
         <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
           Session complete

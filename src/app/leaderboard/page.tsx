@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import type { LeaderboardResponse, LeaderboardEntry } from '@/app/api/leaderboard/route';
+import { trackEvent, EVENTS } from '@/lib/posthog';
 
 const RANK_EMOJI = ['🥇', '🥈', '🥉'];
 
@@ -25,6 +26,10 @@ export default function LeaderboardPage() {
   const [myRank, setMyRank] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    trackEvent(EVENTS.LEADERBOARD_VIEWED, { tab });
+  }, [tab]);
 
   useEffect(() => {
     setLoading(true);
@@ -50,7 +55,7 @@ export default function LeaderboardPage() {
   }, [tab]);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100">
+    <div className="min-h-screen bg-slate-900 text-slate-100 pb-[50px] xl:pb-[90px]">
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center gap-4 px-4 h-14 bg-slate-800 border-b border-slate-700">
         <Link href="/play/1" className="text-slate-400 hover:text-slate-200 transition-colors text-sm">

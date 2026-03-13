@@ -131,15 +131,6 @@
 ## Day 5 — Ads + Analytics + Polish + Deploy
 
 ### TODO
-- [ ] Google AdSense bottom banner (persistent)
-- [ ] 5-second interstitial overlay between rounds
-- [ ] AdMob rewarded video for Round 5 unlock
-- [ ] Placeholder ad spaces (until AdSense approval)
-- [ ] PostHog setup + all core events (see docs/ANALYTICS.md)
-- [ ] Sentry error monitoring setup
-- [ ] Admin puzzle generation: use admin's local date (not UTC) when setting the `date` field, so puzzle dates match what players see in their timezone (currently UTC date is used, causing mismatch for UTC- users)
-- [ ] Mobile responsiveness pass
-- [ ] Loading states and error handling
 - [ ] Deploy to Vercel
 - [ ] Connect dailydiffs.app domain via Cloudflare
 - [ ] Full end-to-end test of every flow
@@ -148,10 +139,21 @@
 - [ ] Git commits after each feature
 
 ### BLOCKED
-- Depends on Day 1-4 completion
+- (none)
 
 ### DONE
-- (nothing yet)
+- [x] Google AdSense bottom banner (persistent) — `src/components/ads/BannerAd.tsx`; fixed to bottom of all pages; shows real AdSense when `NEXT_PUBLIC_ADSENSE_CLIENT_ID` set, falls back to placeholder
+- [x] 5-second interstitial overlay between rounds — `src/components/ads/InterstitialAd.tsx`; countdown progress bar; "Next Round" button locked until ad completes
+- [x] AdMob rewarded video for Round 5 unlock — `src/components/ads/RewardedVideoAd.tsx`; full IMA SDK integration with placeholder fallback; `/api/unlock-round5` server verification
+- [x] Placeholder ad spaces (until AdSense approval) — all ad components show styled grey "Advertisement" boxes when env vars are absent
+- [x] Transition screen redesigned — side-by-side layout: round stats + mini leaderboard (left), ad panel (right); mobile stacked
+- [x] PostHog setup + all core events — `src/lib/posthog.ts`, `src/components/PostHogProvider.tsx`; events: puzzle_started, difference_found, difference_wrong_tap, round_completed, session_completed, login_gate_shown, ad_*, share_clicked, leaderboard_viewed, home_page_viewed
+- [x] Sentry error monitoring setup — `sentry.client/server/edge.config.ts`; `next.config.mjs` wrapped with `withSentryConfig`
+- [x] Admin puzzle generation: use admin's local date — fixed `tomorrow()` in `AdminClient.tsx` to use local date math instead of `toISOString()` (UTC)
+- [x] Mobile responsiveness pass — all pages have `pb-[50px] xl:pb-[90px]` padding to account for fixed banner; mobile ad strip removed from play page
+- [x] Loading states and error handling — skeleton loader in play page; image error state in GameCanvas; `onMiss` prop for wrong-tap tracking
+- [x] `watchedAdForRound5` wired end-to-end: GameSessionContext → transition page → results page → `/api/session-complete`
+- [x] Tests: 12 test suites, 71 tests passing (added posthog, InterstitialAd, RewardedVideoAd tests)
 
 ---
 

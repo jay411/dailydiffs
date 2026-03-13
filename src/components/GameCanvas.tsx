@@ -12,6 +12,7 @@ type Props = {
   differences: Difference[];
   foundIndices: Set<number>;
   onFound: (index: number) => void;
+  onMiss?: () => void;
 };
 
 // Container is always aspect-[4/3]
@@ -43,8 +44,10 @@ export function GameCanvas({
   differences,
   foundIndices,
   onFound,
+  onMiss,
 }: Props) {
   const [showMiss, setShowMiss] = useState(false);
+  const [imageError, setImageError] = useState(false);
   // Stored in state (not ref) so the marker overlay re-renders after image loads.
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
 
@@ -81,6 +84,7 @@ export function GameCanvas({
       if (idx >= 0) {
         onFound(idx);
       } else {
+        onMiss?.();
         setShowMiss(true);
         setTimeout(() => setShowMiss(false), 300);
       }
@@ -110,7 +114,13 @@ export function GameCanvas({
               sizes="(max-width: 1280px) 50vw, 40vw"
               unoptimized={src.startsWith('/')}
               onLoad={handleImageLoad}
+              onError={() => setImageError(true)}
             />
+            {imageError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-800 z-10 pointer-events-none">
+                <p className="text-xs text-slate-500">Image unavailable</p>
+              </div>
+            )}
             <div className="absolute top-2 left-2 bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider z-10 pointer-events-none">
               {label}
             </div>

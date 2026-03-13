@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"posthog\\\\|sentry\\\\|adsense\\\\|admob\" /Users/jayraval/Desktop/DailyDiffs/src --include=*.ts --include=*.tsx --include=*.js --include=*.jsx)",
+      "Bash(npm install:*)",
+      "Bash(node -e \"const s = require\\(''./node_modules/@sentry/nextjs/package.json''\\); console.log\\(s.version\\)\")",
+      "Bash(ls /Users/jayraval/Desktop/DailyDiffs/.claude/worktrees/infallible-faraday/src/lib/*.test.ts)",
+      "Bash(npm test:*)"
+    ]
+  }
+}

@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import Script from "next/script";
+import { Suspense } from "react";
 import { GameSessionProvider } from "@/components/GameSessionProvider";
+import { PostHogProvider } from "@/components/PostHogProvider";
+import { BannerAd } from "@/components/ads/BannerAd";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -46,12 +50,31 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
+
   return (
     <html lang="en">
+      <head>
+        {adsenseClientId && (
+          <Script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+          />
+        )}
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <GameSessionProvider>{children}</GameSessionProvider>
+        <GameSessionProvider>
+          <Suspense>
+            <PostHogProvider>
+              {children}
+              <BannerAd />
+            </PostHogProvider>
+          </Suspense>
+        </GameSessionProvider>
       </body>
     </html>
   );

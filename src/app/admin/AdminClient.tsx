@@ -14,9 +14,12 @@ interface GenerateProgress {
 const ROUNDS = [1, 2, 3, 4, 5] as const;
 
 function tomorrow(): string {
+  // Use local date arithmetic to avoid UTC offset mismatch for UTC- admins
   const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
+  const next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+  const mm = String(next.getMonth() + 1).padStart(2, '0');
+  const dd = String(next.getDate()).padStart(2, '0');
+  return `${next.getFullYear()}-${mm}-${dd}`;
 }
 
 function groupByDate(puzzles: PendingPuzzle[]): Record<string, PendingPuzzle[]> {

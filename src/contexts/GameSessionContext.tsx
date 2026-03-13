@@ -17,6 +17,23 @@ import {
 export type RoundResultEntry = RoundResultInput & { roundScore: number };
 
 const STORAGE_KEY = 'dailydiffs_session';
+const WATCHED_AD_KEY = 'dailydiffs_watched_ad_r5';
+
+function loadWatchedAd(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return sessionStorage.getItem(WATCHED_AD_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function saveWatchedAd(value: boolean) {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(WATCHED_AD_KEY, String(value));
+  } catch {}
+}
 
 function loadFromStorage(): RoundResultEntry[] {
   if (typeof window === 'undefined') return [];
@@ -46,12 +63,20 @@ type GameSessionContextValue = {
   totalScore: number;
   totalTimeSeconds: number;
   getRoundResult: (round: number) => RoundResultEntry | undefined;
+  watchedAdForRound5: boolean;
+  setWatchedAdForRound5: (value: boolean) => void;
 };
 
 const GameSessionContext = createContext<GameSessionContextValue | null>(null);
 
 export function GameSessionProvider({ children }: { children: ReactNode }) {
   const [roundResults, setRoundResults] = useState<RoundResultEntry[]>(loadFromStorage);
+  const [watchedAdForRound5, setWatchedAdForRound5Raw] = useState<boolean>(loadWatchedAd);
+
+  const setWatchedAdForRound5 = useCallback((value: boolean) => {
+    setWatchedAdForRound5Raw(value);
+    saveWatchedAd(value);
+  }, []);
 
   const addRoundResult = useCallback((input: RoundResultInput) => {
     const { roundScore } = calculateRoundScore(input);
@@ -67,6 +92,8 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
   const resetSession = useCallback(() => {
     setRoundResults([]);
     saveToStorage([]);
+    setWatchedAdForRound5Raw(false);
+    saveWatchedAd(false);
   }, []);
 
   const getRoundResult = useCallback(
@@ -87,6 +114,8 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
       totalScore,
       totalTimeSeconds,
       getRoundResult,
+      watchedAdForRound5,
+      setWatchedAdForRound5,
     }),
     [
       roundResults,
@@ -95,6 +124,8 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
       totalScore,
       totalTimeSeconds,
       getRoundResult,
+      watchedAdForRound5,
+      setWatchedAdForRound5,
     ],
   );
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePuzzle } from '@/hooks/usePuzzle';
@@ -9,6 +9,7 @@ import { useGameSession } from '@/contexts/GameSessionContext';
 import { GameCanvas } from '@/components/GameCanvas';
 import { Timer } from '@/components/Timer';
 import { getPuzzleDateForNow } from '@/lib/puzzle-date';
+import { trackEvent, EVENTS } from '@/lib/posthog';
 import type { LeaderboardEntry } from '@/app/api/leaderboard/route';
 
 const RANK_EMOJI = ['🥇', '🥈', '🥉'];
@@ -47,6 +48,7 @@ export default function PlayRoundPage() {
   });
   const { addRoundResult } = useGameSession();
   const [activeSheet, setActiveSheet] = useState<'scores' | 'group' | 'share' | null>(null);
+  const puzzleStartedRef = useRef(false);
 
   // Leaderboard state
   const [lbEntries, setLbEntries] = useState<LeaderboardEntry[]>([]);
@@ -62,6 +64,15 @@ export default function PlayRoundPage() {
   const [groupLoading, setGroupLoading] = useState(false);
   const [groupError, setGroupError] = useState('');
   const [inviteCopied, setInviteCopied] = useState(false);
+
+  // Track puzzle started (once per round mount)
+  useEffect(() => {
+    if (!loading && puzzle && !puzzleStartedRef.current) {
+      puzzleStartedRef.current = true;
+      if (round === 1) trackEvent(EVENTS.HOME_PAGE_VIEWED);
+      trackEvent(EVENTS.PUZZLE_STARTED, { round, art_style: puzzle.art_style });
+    }
+  }, [loading, puzzle, round]);
 
   // Load leaderboard
   useEffect(() => {
@@ -97,8 +108,14 @@ export default function PlayRoundPage() {
 
   if (loading) {
     return (
-      <div className="h-dvh flex items-center justify-center bg-slate-900">
-        <p className="text-slate-400 animate-pulse">Loading puzzle…</p>
+      <div className="h-dvh flex flex-col bg-slate-900 pb-[50px] xl:pb-[90px]">
+        <div className="h-12 bg-slate-800 border-b border-slate-700 flex-shrink-0" />
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="grid grid-cols-2 gap-3 w-full max-w-2xl">
+            <div className="aspect-[4/3] bg-slate-800 rounded-xl animate-pulse" />
+            <div className="aspect-[4/3] bg-slate-800 rounded-xl animate-pulse" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -115,14 +132,22 @@ export default function PlayRoundPage() {
   const differences = puzzle.differences_json;
 
   function handleContinue() {
-    addRoundResult({
+    const result = {
       round,
       differencesFound: foundIndices.size,
       totalDifferences: differences.length,
       timeSeconds,
-    });
+    };
+    addRoundResult(result);
     clearRoundStartTime(puzzleDate, round);
+    trackEvent(EVENTS.ROUND_COMPLETED, {
+      round,
+      diffs_found: result.differencesFound,
+      total_diffs: result.totalDifferences,
+      time_seconds: Math.round(timeSeconds),
+    });
     if (round === 1) {
+      trackEvent(EVENTS.LOGIN_GATE_SHOWN);
       router.push('/auth/login?next=/play/2');
     } else {
       router.push(round < 5 ? `/play/transition?from=${round}` : '/results');
@@ -314,7 +339,7 @@ export default function PlayRoundPage() {
   ) : null;
 
   return (
-    <div className="h-dvh flex flex-col bg-slate-900 overflow-hidden">
+    <div className="h-dvh flex flex-col bg-slate-900 overflow-hidden pb-[50px] xl:pb-[90px]">
       {GroupModal}
 
       {/* ── Header ── */}
@@ -415,7 +440,11 @@ export default function PlayRoundPage() {
             imageModifiedUrl={puzzle.image_modified_url}
             differences={differences}
             foundIndices={foundIndices}
-            onFound={markFound}
+            onFound={(idx) => {
+              markFound(idx);
+              trackEvent(EVENTS.DIFFERENCE_FOUND, { round, diff_index: idx });
+            }}
+            onMiss={() => trackEvent(EVENTS.DIFFERENCE_WRONG_TAP, { round })}
           />
 
           {/* Progress dots */}
@@ -474,12 +503,8 @@ export default function PlayRoundPage() {
               ))}
             </div>
           </div>
-          {/* Ad slot */}
-          <div className="flex-1 bg-slate-900/60 border border-dashed border-slate-700/60 rounded-xl flex items-center justify-center">
-            <span className="text-[10px] text-slate-700 uppercase tracking-widest rotate-0">
-              Ad
-            </span>
-          </div>
+          {/* Ad slot — replaced by persistent BannerAd in layout */}
+          <div className="flex-1" />
         </aside>
       </div>
 
@@ -492,11 +517,6 @@ export default function PlayRoundPage() {
           <span className="pr-16">🏆&nbsp;&nbsp;{tickerSegment}</span>
           <span className="pr-16">🏆&nbsp;&nbsp;{tickerSegment}</span>
         </div>
-      </div>
-
-      {/* ── Mobile ad strip ── */}
-      <div className="xl:hidden mx-3 mb-1.5 h-11 bg-slate-800/50 border border-dashed border-slate-700/40 rounded-lg flex items-center justify-center flex-shrink-0">
-        <span className="text-[10px] text-slate-700 uppercase tracking-widest">Advertisement</span>
       </div>
 
       {/* ── Mobile bottom tab bar ── */}
