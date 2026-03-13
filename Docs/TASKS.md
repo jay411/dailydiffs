@@ -62,8 +62,7 @@
 ## Day 3 — Gemini Image Pipeline + Admin Portal
 
 ### TODO
-- [x] Regenerate button (per-puzzle) — calls /api/generate-puzzles with date+roundNumber (upsert overwrites)
-- [ ] Git commits after each feature
+- (none)
 
 ### BLOCKED
 - (none)
@@ -91,30 +90,28 @@
 ## Day 4 — Leaderboard + Social Share + Groups
 
 ### TODO
-- [ ] `/api/leaderboard` endpoint — daily rankings: score (desc), time (asc) tiebreaker; wire into left panel + mobile sheet (replace `PLACEHOLDER_LB` in `play/[round]/page.tsx`)
-- [ ] Leaderboard page (/leaderboard) — full page, top 50, current user highlighted
-- [ ] All-time tab on leaderboard (cumulative score)
-- [ ] "Your Rank" widget on results screen
-- [ ] Share card: canvas → PNG export (1200x630), content: day/score/time/diffs/streak (NO spoilers)
-- [ ] Share buttons: wire up Twitter/X, Copy Link, Web Share API (mobile native)
-- [ ] Open Graph meta tags for link previews
-- [ ] Groups feature:
-  - [ ] DB: `groups` table (id, name, invite_code, created_by, created_at)
-  - [ ] DB: `group_members` table (group_id, user_id, joined_at)
-  - [ ] `/api/groups/create` — create group, generate invite code
-  - [ ] `/api/groups/join` — join by invite code
-  - [ ] `/api/groups/[id]/leaderboard` — members ranked by today's score
-  - [ ] UI: "Create or join a group" flow (modal/page) wired up from left panel + mobile sheet
-  - [ ] UI: My Group section shows real members + scores (replace placeholder)
-  - [ ] Invite link sharing (copy link with invite code)
-- [ ] Write tests for leaderboard ranking query
-- [ ] Write tests for share card generation
-- [ ] Git commits after each feature
+- (none)
 
 ### BLOCKED
 - (none)
 
 ### DONE
+- [x] `/api/leaderboard` endpoint — daily rankings: score (desc), time (asc) tiebreaker; wired into left panel + mobile sheet
+- [x] Leaderboard page (/leaderboard) — full page, top 50, current user highlighted
+- [x] All-time tab on leaderboard (cumulative score aggregated from game_sessions)
+- [x] "Your Rank" widget on results screen (fetched post session-complete)
+- [x] Share card: canvas → PNG export (1200x630), content: day/score/time/diffs/streak (NO spoilers) — `src/lib/share-card.ts`
+- [x] Share buttons: wired up Twitter/X, Copy Link, Web Share API (mobile native) on results page
+- [x] Open Graph + Twitter Card meta tags for link previews in root layout
+- [x] Groups DB migration: `groups` + `group_members` tables with RLS (`supabase/migrations/20260313000001_groups.sql`)
+- [x] `/api/groups/create` — create group, generate invite code
+- [x] `/api/groups/join` — join by invite code
+- [x] `/api/groups/[id]/leaderboard` — members ranked by today's score
+- [x] UI: "Create or join a group" modal wired up from left panel + mobile group sheet
+- [x] UI: My Group section shows real members + scores (left panel + mobile sheet)
+- [x] Invite link sharing (copy link with invite code from group modal)
+- [x] Tests: 12 tests for leaderboard ranking, all-time aggregation, group ranking, share card text
+- [x] Git commits after each feature
 - [x] UI overhaul: home page auto-redirects to `/play/1` (no tap-to-play)
 - [x] Play page redesigned — 3-panel desktop layout: left leaderboard panel, center game canvas, right share+ad panel
 - [x] Game images: aspect ratio 4:3 (was 16:9), removed `max-w-4xl` constraint — images now ~490×368px on 1440px screen (was ~440×247px)
@@ -124,6 +121,10 @@
 - [x] Leaderboard UI scaffolded in left panel + mobile sheet (placeholder data — wire to API)
 - [x] Share buttons UI scaffolded (Twitter/X, Copy, Link — wire up actions)
 - [x] My Group UI scaffolded in left panel + mobile sheet with "+ Create or join a group" hook
+
+### Bug Fixes (post Day 4)
+- [x] Click detection + DifferenceMarker positions corrected for object-contain pillarboxing (square Gemini images in 4:3 container were offset by ~12.5%)
+- [x] Found differences now persist to sessionStorage — navigating away and back no longer resets progress
 
 ---
 
@@ -136,6 +137,7 @@
 - [ ] Placeholder ad spaces (until AdSense approval)
 - [ ] PostHog setup + all core events (see docs/ANALYTICS.md)
 - [ ] Sentry error monitoring setup
+- [ ] Admin puzzle generation: use admin's local date (not UTC) when setting the `date` field, so puzzle dates match what players see in their timezone (currently UTC date is used, causing mismatch for UTC- users)
 - [ ] Mobile responsiveness pass
 - [ ] Loading states and error handling
 - [ ] Deploy to Vercel
