@@ -3,7 +3,7 @@
 > This file is the single source of truth for what's done, in progress, and next.
 > Both Cursor and Claude Code should read this before starting work and update it after completing tasks.
 
-## Current Status: Day 2
+## Current Status: Day 4
 
 ---
 
@@ -88,29 +88,42 @@
 
 ---
 
-## Day 4 — Leaderboard + Social Share
+## Day 4 — Leaderboard + Social Share + Groups
 
 ### TODO
-- [ ] Leaderboard page (/leaderboard)
-- [ ] Daily rankings: score (desc), time (asc) tiebreaker
-- [ ] Top 50 players shown
-- [ ] Current user highlighted
-- [ ] All-time tab (cumulative score)
+- [ ] `/api/leaderboard` endpoint — daily rankings: score (desc), time (asc) tiebreaker; wire into left panel + mobile sheet (replace `PLACEHOLDER_LB` in `play/[round]/page.tsx`)
+- [ ] Leaderboard page (/leaderboard) — full page, top 50, current user highlighted
+- [ ] All-time tab on leaderboard (cumulative score)
 - [ ] "Your Rank" widget on results screen
-- [ ] Share card: canvas → PNG export (1200x630)
-- [ ] Share card content: day, score, time, diffs found, streak (NO spoilers)
-- [ ] Share buttons: Twitter/X, Instagram Stories, Reddit, Copy Link
-- [ ] Web Share API for mobile native share
+- [ ] Share card: canvas → PNG export (1200x630), content: day/score/time/diffs/streak (NO spoilers)
+- [ ] Share buttons: wire up Twitter/X, Copy Link, Web Share API (mobile native)
 - [ ] Open Graph meta tags for link previews
+- [ ] Groups feature:
+  - [ ] DB: `groups` table (id, name, invite_code, created_by, created_at)
+  - [ ] DB: `group_members` table (group_id, user_id, joined_at)
+  - [ ] `/api/groups/create` — create group, generate invite code
+  - [ ] `/api/groups/join` — join by invite code
+  - [ ] `/api/groups/[id]/leaderboard` — members ranked by today's score
+  - [ ] UI: "Create or join a group" flow (modal/page) wired up from left panel + mobile sheet
+  - [ ] UI: My Group section shows real members + scores (replace placeholder)
+  - [ ] Invite link sharing (copy link with invite code)
 - [ ] Write tests for leaderboard ranking query
 - [ ] Write tests for share card generation
 - [ ] Git commits after each feature
 
 ### BLOCKED
-- Depends on Day 1-3 completion
+- (none)
 
 ### DONE
-- (nothing yet)
+- [x] UI overhaul: home page auto-redirects to `/play/1` (no tap-to-play)
+- [x] Play page redesigned — 3-panel desktop layout: left leaderboard panel, center game canvas, right share+ad panel
+- [x] Game images: aspect ratio 4:3 (was 16:9), removed `max-w-4xl` constraint — images now ~490×368px on 1440px screen (was ~440×247px)
+- [x] `x/y found` label shown under each image independently (removed from header)
+- [x] Bottom leaderboard ticker (scrolling, desktop only)
+- [x] Mobile: images top-anchored, bottom tab bar (Game / Scores / Group / Share), bottom sheets for leaderboard + share
+- [x] Leaderboard UI scaffolded in left panel + mobile sheet (placeholder data — wire to API)
+- [x] Share buttons UI scaffolded (Twitter/X, Copy, Link — wire up actions)
+- [x] My Group UI scaffolded in left panel + mobile sheet with "+ Create or join a group" hook
 
 ---
 
