@@ -60,6 +60,27 @@ export function PuzzleCard({ puzzle, onAction }: { puzzle: PendingPuzzle; onActi
     }
   }
 
+  async function handleRegenerate() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/generate-puzzles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: puzzle.date, roundNumber: puzzle.roundNumber }),
+      });
+      if (!res.ok) {
+        const json = await res.json() as { error?: string };
+        throw new Error(json.error ?? 'Regenerate failed');
+      }
+      onAction();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const emoji = ART_STYLE_EMOJI[puzzle.artStyle] ?? '🖼️';
 
   return (
@@ -104,12 +125,21 @@ export function PuzzleCard({ puzzle, onAction }: { puzzle: PendingPuzzle; onActi
             >
               ✗
             </button>
+            <button
+              type="button"
+              onClick={handleRegenerate}
+              disabled={loading}
+              title="Regenerate"
+              className="flex-1 text-xs py-1 rounded-lg bg-slate-600 hover:bg-slate-500 disabled:opacity-50 text-white font-medium"
+            >
+              {loading ? '…' : '🔄'}
+            </button>
           </div>
         </div>
       </div>
 
       {expanded && (
-        <ExpandedPuzzleView puzzle={puzzle} onClose={() => setExpanded(false)} onApprove={handleApprove} onReject={handleReject} />
+        <ExpandedPuzzleView puzzle={puzzle} onClose={() => setExpanded(false)} onApprove={handleApprove} onReject={handleReject} onRegenerate={handleRegenerate} />
       )}
     </>
   );

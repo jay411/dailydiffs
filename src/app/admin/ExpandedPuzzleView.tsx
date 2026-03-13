@@ -9,11 +9,13 @@ export function ExpandedPuzzleView({
   onClose,
   onApprove,
   onReject,
+  onRegenerate,
 }: {
   puzzle: PendingPuzzle;
   onClose: () => void;
   onApprove: () => void;
   onReject: () => void;
+  onRegenerate: () => void;
 }) {
   const foundSet = new Set<number>();
 
@@ -93,6 +95,13 @@ export function ExpandedPuzzleView({
             className="px-5 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm"
           >
             ✗ Reject
+          </button>
+          <button
+            type="button"
+            onClick={() => { onRegenerate(); onClose(); }}
+            className="px-5 py-2 rounded-xl bg-slate-600 hover:bg-slate-500 text-white font-semibold text-sm"
+          >
+            🔄 Regenerate
           </button>
           <button
             type="button"
