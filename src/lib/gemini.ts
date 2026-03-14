@@ -16,7 +16,7 @@ const SAFETY_SETTINGS = [
 ];
 
 const ART_STYLES: Record<number, { name: string; promptTemplate: string }> = {
-  1: { name: 'cartoon', promptTemplate: 'A flat-color comic strip illustration of {scene}. Clean black ink outlines, simple shapes, bright solid colors, no gradients, no people, no humans.' },
+  1: { name: 'cartoon', promptTemplate: 'A flat-color single-scene cartoon illustration of {scene}. Single cohesive scene, not a multi-panel grid. Clean black ink outlines, simple shapes, bright solid colors, no gradients, no people, no humans.' },
   2: { name: 'pixel', promptTemplate: 'A 16-bit pixel art scene of {scene}. Retro SNES video game aesthetic, limited 16-32 color palette, clear pixel grid, no people, no humans.' },
   3: { name: 'watercolor', promptTemplate: 'A watercolor illustration of {scene}. Soft edges, visible brush strokes, muted palette with bright accents, paper texture, no people, no humans.' },
   4: { name: 'isometric', promptTemplate: 'An isometric cutaway room illustration of {scene}. Clean 30-degree geometric angles, flat colors, minimal shadows, no people, no humans.' },
@@ -171,8 +171,12 @@ Respond ONLY with valid JSON: {"score": 7, "issues": []}`;
 export async function extractDifferenceCoordinates(
   originalBuffer: Buffer,
   modifiedBuffer: Buffer,
+  expectedCount?: number,
 ): Promise<Difference[]> {
   const model = getGenAI().getGenerativeModel({ model: TEXT_MODEL, safetySettings: SAFETY_SETTINGS });
+  const countConstraint = expectedCount
+    ? `\nIMPORTANT: There are EXACTLY ${expectedCount} differences. Return EXACTLY ${expectedCount} items.`
+    : '';
   const prompt = `Compare these two images (original, then modified) and identify all visual differences.
 
 For each difference provide:
@@ -180,7 +184,7 @@ For each difference provide:
 - y: vertical center as percentage 0–100 from top
 - radius: size of difference area as percentage 3–8
 - description: brief description
-
+${countConstraint}
 Respond ONLY with a valid JSON array:
 [{"x": 25, "y": 40, "radius": 5, "description": "removed apple"}]`;
 

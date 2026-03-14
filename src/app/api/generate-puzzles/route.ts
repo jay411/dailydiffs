@@ -11,6 +11,7 @@ import {
   buildImagePrompt,
   getArtStyleName,
 } from '@/lib/gemini';
+import { extractCoordinatesFromPixelDiff } from '@/lib/pixel-diff';
 
 // Allow up to 5 minutes on Vercel Pro
 export const maxDuration = 300;
@@ -80,8 +81,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'QA score out of range', score: qa.score, issues: qa.issues }, { status: 422 });
     }
 
-    // Step 6: Extract difference coordinates
-    const differences = await extractDifferenceCoordinates(originalBuffer, modifiedBuffer);
+    // Step 6: Extract difference coordinates via pixel diff (deterministic),
+    // falling back to Gemini Vision if the count doesn't match expectations.
+    const expectedCount = sceneData.differences.length;
+    let differences = await extractCoordinatesFromPixelDiff(originalBuffer, modifiedBuffer);
+    let coordinateSource = 'pixel-diff';
+
+    if (differences.length !== expectedCount) {
+      differences = await extractDifferenceCoordinates(originalBuffer, modifiedBuffer, expectedCount);
+      coordinateSource = 'gemini-fallback';
+    }
 
     // Step 7: Upload to puzzles-pending bucket
     const origPath = `${date}/${roundNumber}_original.png`;
@@ -131,6 +140,9 @@ export async function POST(req: NextRequest) {
       generation_time_seconds: (Date.now() - startTime) / 1000,
       qa_score: qa.score,
       status: 'generated',
+      rejection_reason: coordinateSource === 'gemini-fallback'
+        ? `coordinate_source: gemini-fallback (pixel-diff returned ${differences.length}, expected ${expectedCount})`
+        : null,
     });
 
     return NextResponse.json({ success: true, puzzleId: puzzle.id, qaScore: qa.score });
