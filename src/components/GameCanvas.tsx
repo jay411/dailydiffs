@@ -96,65 +96,65 @@ export function GameCanvas({
   // x/y percentages align with image coordinates, not container coordinates.
   const imageFrame = naturalSize ? getImageFrame(naturalSize) : null;
 
-  const images = [
-    { src: imageOriginalUrl, alt: 'Original', label: 'ORIGINAL' },
-    { src: imageModifiedUrl, alt: 'Modified', label: 'MODIFIED' },
-  ];
+  const renderImagePanel = (src: string, alt: string, label: string, isModified: boolean) => (
+    <div key={label} className="flex flex-col gap-2">
+      <div className="relative aspect-[4/3] w-full bg-slate-800 rounded-xl overflow-hidden border border-slate-700/60">
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          className="object-contain"
+          sizes="(max-width: 1280px) 50vw, 40vw"
+          unoptimized={src.startsWith('/')}
+          onLoad={handleImageLoad}
+          onError={() => setImageError(true)}
+        />
+        {imageError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-800 z-10 pointer-events-none">
+            <p className="text-xs text-slate-500">Image unavailable</p>
+          </div>
+        )}
+        <div className="absolute top-2 left-2 bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider z-10 pointer-events-none">
+          {label}
+        </div>
+        {imageFrame && (
+          <div className="absolute pointer-events-none z-10" style={imageFrame}>
+            {differences.map((d, i) => (
+              <DifferenceMarker
+                key={i}
+                xPercent={d.x}
+                yPercent={d.y}
+                radiusPercent={d.radius}
+                found={foundIndices.has(i)}
+              />
+            ))}
+          </div>
+        )}
+        {isModified && (
+          <div
+            role="button"
+            tabIndex={0}
+            className="absolute inset-0 w-full h-full cursor-crosshair z-20"
+            onClick={(e) => handleImageClick(e as unknown as React.MouseEvent<HTMLDivElement>)}
+            onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLDivElement).click()}
+            aria-label="Tap to spot differences on modified image"
+          />
+        )}
+        {isModified && showMiss && (
+          <div className="absolute inset-0 bg-red-500/20 pointer-events-none animate-pulse z-30" aria-hidden />
+        )}
+      </div>
+      <p className="text-center text-sm text-slate-400">
+        <span className="text-emerald-400 font-semibold">{foundIndices.size}</span>
+        <span className="text-slate-500">/{differences.length} found</span>
+      </p>
+    </div>
+  );
 
   return (
     <div className="grid grid-cols-2 gap-3 w-full">
-      {images.map(({ src, alt, label }) => (
-        <div key={label} className="flex flex-col gap-2">
-          <div className="relative aspect-[4/3] w-full bg-slate-800 rounded-xl overflow-hidden border border-slate-700/60">
-            <Image
-              src={src}
-              alt={alt}
-              fill
-              className="object-contain"
-              sizes="(max-width: 1280px) 50vw, 40vw"
-              unoptimized={src.startsWith('/')}
-              onLoad={handleImageLoad}
-              onError={() => setImageError(true)}
-            />
-            {imageError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-slate-800 z-10 pointer-events-none">
-                <p className="text-xs text-slate-500">Image unavailable</p>
-              </div>
-            )}
-            <div className="absolute top-2 left-2 bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider z-10 pointer-events-none">
-              {label}
-            </div>
-            {imageFrame && (
-              <div className="absolute pointer-events-none z-10" style={imageFrame}>
-                {differences.map((d, i) => (
-                  <DifferenceMarker
-                    key={i}
-                    xPercent={d.x}
-                    yPercent={d.y}
-                    radiusPercent={d.radius}
-                    found={foundIndices.has(i)}
-                  />
-                ))}
-              </div>
-            )}
-            <div
-              role="button"
-              tabIndex={0}
-              className="absolute inset-0 w-full h-full cursor-crosshair z-20"
-              onClick={(e) => handleImageClick(e as unknown as React.MouseEvent<HTMLDivElement>)}
-              onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLDivElement).click()}
-              aria-label={`Tap to spot differences on ${alt.toLowerCase()} image`}
-            />
-            {showMiss && (
-              <div className="absolute inset-0 bg-red-500/20 pointer-events-none animate-pulse z-30" aria-hidden />
-            )}
-          </div>
-          <p className="text-center text-sm text-slate-400">
-            <span className="text-emerald-400 font-semibold">{foundIndices.size}</span>
-            <span className="text-slate-500">/{differences.length} found</span>
-          </p>
-        </div>
-      ))}
+      {renderImagePanel(imageOriginalUrl, 'Original', 'ORIGINAL', false)}
+      {renderImagePanel(imageModifiedUrl, 'Modified', 'MODIFIED', true)}
     </div>
   );
 }
