@@ -8,6 +8,7 @@ import { useGameState, clearRoundStartTime } from '@/hooks/useGameState';
 import { useGameSession } from '@/contexts/GameSessionContext';
 import { GameCanvas } from '@/components/GameCanvas';
 import { Timer } from '@/components/Timer';
+import { DifferenceToast } from '@/components/DifferenceToast';
 import { getPuzzleDateForNow } from '@/lib/puzzle-date';
 import { trackEvent, EVENTS } from '@/lib/posthog';
 import type { LeaderboardEntry } from '@/app/api/leaderboard/route';
@@ -64,6 +65,15 @@ export default function PlayRoundPage() {
   const [groupLoading, setGroupLoading] = useState(false);
   const [groupError, setGroupError] = useState('');
   const [inviteCopied, setInviteCopied] = useState(false);
+  const [differenceToast, setDifferenceToast] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear difference toast timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    };
+  }, []);
 
   // Track puzzle started (once per round mount)
   useEffect(() => {
@@ -434,7 +444,8 @@ export default function PlayRoundPage() {
         </aside>
 
         {/* Center — game canvas */}
-        <main className="flex-1 flex flex-col items-center justify-start xl:justify-center px-4 pt-4 pb-3 gap-3 min-w-0 min-h-0">
+        <main className="flex-1 flex flex-col items-center justify-start xl:justify-center px-4 pt-4 pb-3 gap-3 min-w-0 min-h-0 relative">
+          <DifferenceToast message={differenceToast} />
           <GameCanvas
             imageOriginalUrl={puzzle.image_original_url}
             imageModifiedUrl={puzzle.image_modified_url}
@@ -442,6 +453,16 @@ export default function PlayRoundPage() {
             foundIndices={foundIndices}
             onFound={(idx) => {
               markFound(idx);
+              const desc = differences[idx]?.description?.trim();
+              const toastText = desc
+                ? desc.charAt(0).toUpperCase() + desc.slice(1).toLowerCase()
+                : 'Difference found!';
+              if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+              setDifferenceToast(toastText);
+              toastTimeoutRef.current = setTimeout(() => {
+                setDifferenceToast(null);
+                toastTimeoutRef.current = null;
+              }, 2500);
               trackEvent(EVENTS.DIFFERENCE_FOUND, { round, diff_index: idx });
             }}
             onMiss={() => trackEvent(EVENTS.DIFFERENCE_WRONG_TAP, { round })}

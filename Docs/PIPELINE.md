@@ -252,6 +252,8 @@ if not result.safe:
 
 Even after all automated checks, you review every image in the admin portal before it goes live. This is your last line of defense. The admin review interface shows a safety badge:
 
+**Difference descriptions and coordinates:** During review, verify that each stored difference (description + circle position) matches what you actually see between original and modified images. Gemini can mislabel regions or invent differences (e.g. “missing banana” when the banana appears in both images). Reject pairs where the listed differences don’t match the visible changes, or where circles don’t align with the real diff locations.
+
 ```
 ✅ SAFE — passed all automated checks
 ⚠️ WARNING — passed but flagged minor concerns (review closely)

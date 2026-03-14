@@ -29,4 +29,16 @@ describe('findDifferenceAt', () => {
     expect(findDifferenceAt(30, 40, diffs, new Set())).toBe(0); // 5% away horizontally
     expect(findDifferenceAt(25, 45, diffs, new Set())).toBe(0);
   });
+
+  it('returns closest difference when circles overlap (not first in array)', () => {
+    // Two circles that overlap: A at (20,50) r=15, B at (35,50) r=15. Tap at (28,50) is in both.
+    const overlapping = [
+      { x: 20, y: 50, radius: 15 },
+      { x: 35, y: 50, radius: 15 },
+    ];
+    // Tap at (28,50): dist to A = 8, dist to B = 7 → should match B (index 1)
+    expect(findDifferenceAt(28, 50, overlapping, new Set())).toBe(1);
+    // Tap at (22,50): dist to A = 2, dist to B = 13 → should match A (index 0)
+    expect(findDifferenceAt(22, 50, overlapping, new Set())).toBe(0);
+  });
 });
